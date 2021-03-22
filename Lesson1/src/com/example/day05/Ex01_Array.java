@@ -10,7 +10,6 @@ public class Ex01_Array {
 		score[0][1] = 80;
 		score[0][2] = 90;
 		
-		
 		score[1][0] = 50;
 		score[1][1] = 40;
 		score[1][2] = 30;
@@ -26,18 +25,14 @@ public class Ex01_Array {
 			float s_sum = 0 ,s_avg = 0;
 			for (int j=0; j<score[i].length; j++) {
 				s_sum += score[i][j];
-				if( i == 0) {
+				if( j == 0) {
 					sum[0] += score[i][j];
-					System.out.println(sum[0]);
-				}else if( i == 1) {
+				}else if( j == 1) {
 					sum[1] += score[i][j];
-					System.out.println(sum[1]);
-				}else if( i == 2){
+				}else if( j == 2){
 					sum[2] += score[i][j];
-					System.out.println(sum[2]);
 				}
 			}
-			
 			
 			s_avg = s_sum/3;
 			System.out.println("학생"+i+"의 총점은 "+s_sum+"입니다");
