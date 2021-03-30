@@ -23,14 +23,17 @@ import java.awt.Font;
 import javax.swing.JTextField;
 import javax.swing.JTable;
 import javax.swing.JScrollPane;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class JavaGUI extends JFrame {
 	
 	private JPanel contentPane;
-	private JTextField textField;
-	private JTextField textField_1;
+	private JTextField txtTitle;
+	private JTextField txtAuthor;
 	private JTable tblBook;
 	DefaultTableModel model;
+	int bookid4update;
 
 	/**
 	 * Launch the application.
@@ -92,43 +95,119 @@ public class JavaGUI extends JFrame {
 		lblNewLabel_2.setBounds(23, 121, 57, 15);
 		contentPane.add(lblNewLabel_2);
 		
-		textField = new JTextField();
-		textField.setBounds(62, 85, 169, 21);
-		contentPane.add(textField);
-		textField.setColumns(10);
+		txtTitle = new JTextField();
+		txtTitle.setBounds(62, 85, 169, 21);
+		contentPane.add(txtTitle);
+		txtTitle.setColumns(10);
 		
-		textField_1 = new JTextField();
-		textField_1.setColumns(10);
-		textField_1.setBounds(62, 118, 169, 21);
-		contentPane.add(textField_1);
+		txtAuthor = new JTextField();
+		txtAuthor.setColumns(10);
+		txtAuthor.setBounds(62, 118, 169, 21);
+		contentPane.add(txtAuthor);
 		
-		JButton btnNewButton = new JButton("초기화");
-		btnNewButton.setBounds(23, 160, 97, 23);
-		contentPane.add(btnNewButton);
-		
-		JButton btnNewButton_1 = new JButton("저장");
-		btnNewButton_1.setBounds(134, 160, 97, 23);
-		contentPane.add(btnNewButton_1);
-		
-		JButton btnNewButton_2 = new JButton("수정");
-		btnNewButton_2.addActionListener(new ActionListener() {
+		JButton btnReset = new JButton("초기화");
+		btnReset.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				txtTitle.setText("");
+				txtAuthor.setText("");
 			}
 		});
-		btnNewButton_2.setBounds(23, 193, 97, 23);
-		contentPane.add(btnNewButton_2);
+		btnReset.setBounds(23, 160, 97, 23);
+		contentPane.add(btnReset);
 		
-		JButton btnNewButton_3 = new JButton("삭제");
-		btnNewButton_3.setBounds(134, 193, 97, 23);
-		contentPane.add(btnNewButton_3);
+		JButton btnSave = new JButton("저장");
+		btnSave.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String sql = "INSERT INTO bookinfo (title,author) VALUES (?,?)";
+				String title = txtTitle.getText();
+				String author = txtAuthor.getText();
+				try {
+					PreparedStatement pstmt = DBUtil.dbconn.prepareStatement(sql);
+					pstmt.setString(1, title);
+					pstmt.setString(2, author);
+					
+					// 실제적 자료추가
+					pstmt.execute();
+					// 테이블 다시 로드
+					LoadTbl();
+				}catch(SQLException einsert) {
+					JOptionPane.showMessageDialog(null, "자료 추가 중 오류가 발생하였습니다.");
+				}
+			}
+		});
+		
+		btnSave.setBounds(134, 160, 97, 23);
+		contentPane.add(btnSave);
+		
+		JButton btnUpdate = new JButton("수정");
+		btnUpdate.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String sql = "UPDATE bookinfo SET title = ? , author = ? WHERE id = ?";
+				String title = txtTitle.getText();
+				String author = txtAuthor.getText();
+				
+				try {
+					PreparedStatement pstmt = DBUtil.dbconn.prepareStatement(sql);
+					pstmt.setString(1, title);
+					pstmt.setString(2, author);
+					pstmt.setInt(3, bookid4update);
+					
+					// 실제적 자료추가
+					pstmt.execute();
+					// 테이블 다시 로드
+					LoadTbl();
+				}catch(SQLException eupdate) {
+					JOptionPane.showMessageDialog(null, "자료 수정 중 오류가 발생하였습니다.");
+					eupdate.printStackTrace();
+				}
+			}
+		});
+		btnUpdate.setBounds(23, 193, 97, 23);
+		contentPane.add(btnUpdate);
+		
+		JButton btnDelete = new JButton("삭제");
+		btnDelete.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+					String sql = "DELETE FROM bookinfo  WHERE id = ?";
+					
+					try {
+						PreparedStatement pstmt = DBUtil.dbconn.prepareStatement(sql);
+						pstmt.setInt(1, bookid4update);
+						
+						// 실제적 자료 삭제
+						pstmt.execute();
+						// 테이블 다시 로드
+						LoadTbl();
+					}catch(SQLException edelete) {
+						JOptionPane.showMessageDialog(null, "자료 삭제 중 오류가 발생하였습니다.");
+						edelete.printStackTrace();
+					}
+			}
+		});
+		
+		btnDelete.setBounds(134, 193, 97, 23);
+		contentPane.add(btnDelete);
 		
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setBounds(243, 49, 508, 223);
 		contentPane.add(scrollPane);
 		
 		tblBook = new JTable();
+		tblBook.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int row = tblBook.getSelectedRow();
+				bookid4update = Integer.parseInt(tblBook.getModel().getValueAt(row, 0).toString());
+				
+				setTextField(bookid4update);
+			}
+		});
 		scrollPane.setViewportView(tblBook);
 	}// end of constructor
+	
+	
+	
+	
 	
 	private void LoadTbl() {
 		// 모델 선언 
@@ -165,4 +244,22 @@ public class JavaGUI extends JFrame {
 		}
 		
 	}// end of loadTbl
+	
+	private void setTextField(int id) {
+		String sql = "SELECT title,author FROM bookinfo WHERE id = ? ";
+		try {
+			PreparedStatement pstmt = DBUtil.dbconn.prepareStatement(sql);
+			pstmt.setInt(1, id);
+			ResultSet rs = pstmt.executeQuery();	// 쿼리실행후 결과 갖고오기
+			
+			while(rs.next()) {
+				txtTitle.setText(rs.getString(1));
+				txtAuthor.setText(rs.getString(2));
+			}
+			
+		}catch(SQLException esel) {
+			JOptionPane.showMessageDialog(null, "테이블 검색 중 오류가 발생하였습니다.");
+			
+		}
+	} // end of setTextField
 }//end of class
